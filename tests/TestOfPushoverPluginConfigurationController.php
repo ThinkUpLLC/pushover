@@ -50,5 +50,4 @@ class TestOfPushoverPluginConfigurationController extends ThinkUpUnitTestCase {
     public function tearDown() {
         parent::tearDown();
     }
-
 }

@@ -54,8 +54,24 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
     }
 
     public function crawl() {
-        //@TODO Check the insight ID of the last Pushover notification user got, stored in options table
-        //@TODO If there are more than 3 to notify about since then, send those
+        //Get the creation time of the last insight Pushover notification sent, stored in options table
+        $plugin_option_dao = DAOFactory::getDAO('PluginOptionDAO');
+        $options = $plugin_option_dao->getOptionsHash('pushover');
+        if (isset($options['last_pushed_insight_creation_date']->option_value)) {
+            $last_pushed_insight_creation_date = $options['last_pushed_insight_creation_date']->option_value;
+        } else {
+            $last_pushed_insight_creation_date = false;
+        }
+        //Get insights since last pushed ID, or latest insight
+        $insight_dao = DAOFactory::getDAO('InsightDAO');
+        $insights = array();
+        if ($last_insight_id_pushed !== false ) {
+            //@TODO get insights since last pushed insight creation date
+        } else {
+            //@TODO get last insight generated
+        }
+        //@TODO If there are more than 5 to notify about since then, send those individually
+        //@TODO Otherwise send a single notification saying there are more than 5 new insights
         //@TODO Store most recent notification sent in plugin settings
 
     }
