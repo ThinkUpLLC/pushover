@@ -49,4 +49,58 @@ class TestOfPushoverPlugin extends ThinkUpUnitTestCase {
         parent::tearDown();
     }
 
+    public function testConstructor() {
+        $plugin = new PushoverPlugin();
+        $this->assertNotNull($plugin);
+        $this->assertIsA($plugin, 'PushoverPlugin');
+        $this->assertEqual(count($plugin->required_settings), 2);
+        $this->assertFalse($plugin->isConfigured());
+    }
+
+    public function testCrawlerNotConfigured() {
+        $plugin = new PushoverPlugin();
+        $plugin->crawl();
+        //@TODO check log for 'Pushover plugin isn't configured for use'
+    }
+
+    public function testCrawlerConfiguredNoInsightsToPush() {
+        $builders = array();
+        $builders[] = FixtureBuilder::build('plugins', array('name'=>'Pushover', 'folder_name'=>'pushover'));
+        $plugin_dao = new PluginMySQLDAO();
+        $plugin_id = $plugin_dao->getPluginId('pushover');
+
+        $builders[] = FixtureBuilder::build('options', array('namespace'=>'plugin_options-'.$plugin_id,
+        'option_name'=>'pushover_app_token', 'option_value'=>'asdf'));
+        $builders[] = FixtureBuilder::build('options', array('namespace'=>'plugin_options-'.$plugin_id,
+        'option_name'=>'pushover_user_key', 'option_value'=>'qwerty'));
+
+        $plugin = new PushoverPlugin();
+        $plugin->crawl();
+        //@TODO check log for 'no insights to push'
+    }
+
+    public function testCrawlerConfiguredInsightsToPush() {
+        $builders = array();
+        $builders[] = FixtureBuilder::build('plugins', array('name'=>'Pushover', 'folder_name'=>'pushover'));
+        $plugin_dao = new PluginMySQLDAO();
+        $plugin_id = $plugin_dao->getPluginId('pushover');
+
+        $builders[] = FixtureBuilder::build('options', array('namespace'=>'plugin_options-'.$plugin_id,
+        'option_name'=>'pushover_app_token', 'option_value'=>'asdf'));
+        $builders[] = FixtureBuilder::build('options', array('namespace'=>'plugin_options-'.$plugin_id,
+        'option_name'=>'pushover_user_key', 'option_value'=>'qwerty'));
+
+        //owner
+        $builders[] = FixtureBuilder::build('owners', array('id'=>1, 'email'=>'me@example.com'));
+        //instance
+        $builders[] = FixtureBuilder::build('instances', array('id'=>1));
+        //owner_instance
+        $builders[] = FixtureBuilder::build('owner_instances', array('owner_id'=>1, 'instance_id'=>1));
+        //insights
+        $builders[] = FixtureBuilder::build('insights', array('id'=>1, 'instance_id'=>1, 'text'=>'hallo'));
+
+        $this->simulateLogin('me@example.com');
+        $plugin = new PushoverPlugin();
+        $plugin->crawl();
+    }
 }

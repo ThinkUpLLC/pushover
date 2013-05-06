@@ -51,7 +51,7 @@ class PushoverPluginConfigurationController extends PluginConfigurationControlle
         $this->addPluginOption(self::FORM_TEXT_ELEMENT, $user_key_field); // add element
         $this->addPluginOptionRequiredMessage('pushover_user_key', 'Please enter your Pushover user key.');
 
-        $app_token_field = array('name' => 'pushover_app_token', 'label' => 'Your Pushover app token', 'size' => 40);
+        $app_token_field = array('name' => 'pushover_app_token', 'label' => 'Your Pushover app token', 'size' => 50);
         $this->addPluginOption(self::FORM_TEXT_ELEMENT, $app_token_field); // add element
         $this->addPluginOptionRequiredMessage('pushover_app_token', 'Please enter your Pushover app token.');
 
