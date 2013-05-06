@@ -47,7 +47,7 @@ class PushoverPluginConfigurationController extends PluginConfigurationControlle
         $this->view_mgr->addHelp('pushover', 'contribute/developers/plugins/buildplugin');
 
         /** set option fields **/
-        $user_key_field = array('name' => 'pushover_user_key', 'label' => 'Your Pushover user token', 'size' => 40);
+        $user_key_field = array('name' => 'pushover_user_key', 'label' => 'Your Pushover user key', 'size' => 50);
         $this->addPluginOption(self::FORM_TEXT_ELEMENT, $user_key_field); // add element
         $this->addPluginOptionRequiredMessage('pushover_user_key', 'Please enter your Pushover user key.');
 
