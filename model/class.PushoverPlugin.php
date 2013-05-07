@@ -97,21 +97,12 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
                 $cfg = Config::getInstance();
                 $app_title = $cfg->getValue('app_title_prefix').'ThinkUp';
                 $push->setUrlTitle($app_title);
-                if (sizeof($insights) < 5) {
-                    foreach ($insights as $insight) {
-                        $username_in_title = (($insight->instance->network == 'twitter')?'@':'') .
-                        $insight->instance->network_username;
-                        $title = str_replace(':', '', $insight->prefix). " (".$username_in_title .")";
-                        $push->setTitle($title);
-                        $push->setMessage(strip_tags($insight->text));
-                        $push->setDebug(true);
-                        $results = $push->send();
-                        $logger->logInfo("Push results: ".Utils::varDumpToString($results), __METHOD__.','.__LINE__);
-                    }
-                } else {
-                    //Otherwise send a single notification saying there are more than 5 new insights
-                    $push->setTitle('New insights');
-                    $push->setMessage("You've got more than 5 new insights in ThinkUp.");
+                foreach ($insights as $insight) {
+                    $username_in_title = (($insight->instance->network == 'twitter')?'@':'') .
+                    $insight->instance->network_username;
+                    $title = str_replace(':', '', $insight->prefix). " (".$username_in_title .")";
+                    $push->setTitle($title);
+                    $push->setMessage(strip_tags($insight->text));
                     $push->setDebug(true);
                     $results = $push->send();
                     $logger->logInfo("Push results: ".Utils::varDumpToString($results), __METHOD__.','.__LINE__);
