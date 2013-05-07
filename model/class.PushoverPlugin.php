@@ -67,12 +67,12 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
         isset($options['pushover_app_token']) ? $options['pushover_app_token']->option_value : null;
 
         if (isset($pushover_user_key) && isset($pushover_app_token)) {
-            //Get the creation time of the last insight Pushover notification sent, stored in options table
+            //Get the last time Pushover notifications were sent
             $options = $plugin_option_dao->getOptionsHash('pushover');
-            if (isset($options['last_pushed_insight_creation_date']->option_value)) {
-                $last_pushed_insight_creation_date = $options['last_pushed_insight_creation_date']->option_value;
+            if (isset($options['last_push_completion']->option_value)) {
+                $last_push_completion = $options['last_push_completion']->option_value;
             } else {
-                $last_pushed_insight_creation_date = false;
+                $last_push_completion = false;
             }
             $owner_dao = DAOFactory::getDAO('OwnerDAO');
             $owner = $owner_dao->getByEmail(Session::getLoggedInUser());
@@ -80,10 +80,9 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
             //Get insights since last pushed ID, or latest insight
             $insight_dao = DAOFactory::getDAO('InsightDAO');
             $insights = array();
-            if ($last_pushed_insight_creation_date !== false ) {
+            if ($last_push_completion !== false ) {
                 //Get insights since last pushed insight creation date
-                $insights = $insight_dao->getAllOwnerInstanceInsightsSince($owner->id,
-                $last_pushed_insight_creation_date);
+                $insights = $insight_dao->getAllOwnerInstanceInsightsSince($owner->id, $last_push_completion);
             } else {
                 // get last insight generated
                 $insights = $insight_dao->getAllOwnerInstanceInsights($owner->id, $page_count=1);
@@ -102,22 +101,23 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
                     $insight->instance->network_username;
                     $title = str_replace(':', '', $insight->prefix). " (".$username_in_title .")";
                     $push->setTitle($title);
-                    $push->setMessage(strip_tags($insight->text));
+                    $push->setMessage(strip_tags(str_replace(':', '', $insight->text)));
                     $push->setDebug(true);
                     $results = $push->send();
                     $logger->logInfo("Push results: ".Utils::varDumpToString($results), __METHOD__.','.__LINE__);
                 }
-                // Update $last_pushed_insight_creation_date in plugin settings
-                if (isset($options['last_pushed_insight_creation_date']->option_id)) {
+                // Update $last_push_completion in plugin settings
+                if (isset($options['last_push_completion']->id)) {
                     //update option
-                    $plugin_option_dao->updateOption($options['last_pushed_insight_creation_date']->option_id,
-                    'last_pushed_insight_creation_date', time());
+                    $result = $plugin_option_dao->updateOption($options['last_push_completion']->id,
+                    'last_push_completion', time());
+                    $logger->logInfo("Updated ".$result." option", __METHOD__.','.__LINE__);
                 } else {
                     //insert option
                     $plugin_dao = DAOFactory::getDAO('PluginDAO');
                     $plugin_id = $plugin_dao->getPluginId('pushover');
-                    $plugin_option_dao->insertOption($plugin_id, 'last_pushed_insight_creation_date',
-                    time());
+                    $result = $plugin_option_dao->insertOption($plugin_id, 'last_push_completion', time());
+                    $logger->logInfo("Inserted new option ID ".$result, __METHOD__.','.__LINE__);
                 }
                 $logger->logUserSuccess("Pushed ".sizeof($insights)." insights.", __METHOD__.','.__LINE__);
             } else {
