@@ -110,13 +110,13 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
                 if (isset($options['last_push_completion']->id)) {
                     //update option
                     $result = $plugin_option_dao->updateOption($options['last_push_completion']->id,
-                    'last_push_completion', time());
+                    'last_push_completion', date('Y-m-d H:i:s'));
                     $logger->logInfo("Updated ".$result." option", __METHOD__.','.__LINE__);
                 } else {
                     //insert option
                     $plugin_dao = DAOFactory::getDAO('PluginDAO');
                     $plugin_id = $plugin_dao->getPluginId('pushover');
-                    $result = $plugin_option_dao->insertOption($plugin_id, 'last_push_completion', time());
+                    $result = $plugin_option_dao->insertOption($plugin_id, 'last_push_completion', date('Y-m-d H:i:s'));
                     $logger->logInfo("Inserted new option ID ".$result, __METHOD__.','.__LINE__);
                 }
                 $logger->logUserSuccess("Pushed ".sizeof($insights)." insights.", __METHOD__.','.__LINE__);
