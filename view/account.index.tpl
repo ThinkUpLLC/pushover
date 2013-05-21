@@ -1,8 +1,8 @@
 <div class="plugin-info">
 
-    <span class="pull-right">{insert name="help_link" id='hellothinkup'}</span>
+    <span class="pull-right">{insert name="help_link" id='pushover'}</span>
     <h1>
-        <img src="{$site_root_path}plugins/hellothinkup/assets/img/plugin_icon.png" class="plugin-image">
+        <img src="{$site_root_path}plugins/pushover/assets/img/plugin_icon.png" class="plugin-image">
         Pushover Plugin
     </h1>
     
