@@ -87,24 +87,37 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
                 // get last insight generated
                 $insights = $insight_dao->getAllOwnerInstanceInsights($owner->id, $page_count=1);
             }
-            // If there are more than 5 to notify about since then, send those individually
             if (sizeof($insights) > 0) {
                 $push = new Pushover();
                 $push->setToken($pushover_app_token);
                 $push->setUser($pushover_user_key);
-                $push->setUrl(Utils::getApplicationURL());
                 $cfg = Config::getInstance();
                 $app_title = $cfg->getValue('app_title_prefix').'ThinkUp';
                 $push->setUrlTitle($app_title);
-                foreach ($insights as $insight) {
-                    $username_in_title = (($insight->instance->network == 'twitter')?'@':'') .
-                    $insight->instance->network_username;
-                    $title = str_replace(':', '', $insight->prefix). " (".$username_in_title .")";
+                // If there are more than 3 to notify about, send one
+                if (sizeof($insights) >= 3) {
+                    $title = "New insights available";
                     $push->setTitle($title);
-                    $push->setMessage(strip_tags(str_replace(':', '', $insight->text)));
+                    $push->setMessage("ThinkUp has ".sizeof($insights)." new insights for you");
+                    $push->setUrl(Utils::getApplicationURL());
                     $push->setDebug(true);
                     $results = $push->send();
                     $logger->logInfo("Push results: ".Utils::varDumpToString($results), __METHOD__.','.__LINE__);
+                } else  {
+                    foreach ($insights as $insight) {
+                        $username_in_title = (($insight->instance->network == 'twitter')?'@':'') .
+                        $insight->instance->network_username;
+                        $title = str_replace(':', '', $insight->prefix). " (".$username_in_title .")";
+                        $push->setTitle($title);
+                        $push->setMessage(strip_tags(str_replace(':', '', $insight->text)));
+                        $insight_date = urlencode(date('Y-m-d', strtotime($insight->date)));
+                        $push->setUrl(Utils::getApplicationURL()."?u=".$insight->instance->network_username."&n=".
+                        $insight->instance->network."&d=".$insight_date."&s=".
+                        $insight->slug);
+                        $push->setDebug(true);
+                        $results = $push->send();
+                        $logger->logInfo("Push results: ".Utils::varDumpToString($results), __METHOD__.','.__LINE__);
+                    }
                 }
                 // Update $last_push_completion in plugin settings
                 if (isset($options['last_push_completion']->id)) {
