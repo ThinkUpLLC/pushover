@@ -42,8 +42,6 @@ class PushoverPluginConfigurationController extends PluginConfigurationControlle
         $config = Config::getInstance();
         Loader::definePathConstants();
         $this->setViewTemplate( THINKUP_WEBAPP_PATH.'plugins/pushover/view/account.index.tpl');
-        $this->addToView('message', 'Hello ThinkUp world! This is an auto-generated plugin configuration '.
-        'page for ' . $this->owner->email .'.');
         $this->view_mgr->addHelp('pushover', 'contribute/developers/plugins/buildplugin');
 
         /** set option fields **/
