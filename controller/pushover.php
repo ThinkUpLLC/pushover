@@ -43,5 +43,5 @@ $webapp_plugin_registrar = PluginRegistrarWebapp::getInstance();
 $webapp_plugin_registrar->registerPlugin('pushover', 'PushoverPlugin');
 
 $crawler_plugin_registrar = PluginRegistrarCrawler::getInstance();
-$crawler_plugin_registrar->registerCrawlerPlugin('PushoverPlugin');
+$crawler_plugin_registrar->registerCrawlerPlugin('PushoverPlugin', $run_before_insight_generator=false);
 
