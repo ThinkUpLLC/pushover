@@ -98,7 +98,7 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
                     if ($insight->emphasis > Insight::EMPHASIS_LOW) {
                         $username_in_title = (($insight->instance->network == 'twitter')?'@':'') .
                         $insight->instance->network_username;
-                        $title = str_replace(':', '', $insight->headline). " (".$username_in_title .")";
+                        $title = strip_tags($insight->headline);
                         $push->setTitle($title);
                         $push->setMessage(strip_tags(str_replace(':', '', $insight->text)));
                         $insight_date = urlencode(date('Y-m-d', strtotime($insight->date)));
