@@ -94,26 +94,17 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
                 $cfg = Config::getInstance();
                 $app_title = $cfg->getValue('app_title_prefix').'ThinkUp';
                 $push->setUrlTitle($app_title);
-                // If there are more than 3 to notify about, send one
-                if (sizeof($insights) >= 3) {
-                    $title = "New insights available";
-                    $push->setTitle($title);
-                    $push->setMessage("ThinkUp has ".sizeof($insights)." new insights for you");
-                    $push->setUrl(Utils::getApplicationURL());
-                    $push->setDebug(true);
-                    $results = $push->send();
-                    $logger->logInfo("Push results: ".Utils::varDumpToString($results), __METHOD__.','.__LINE__);
-                } else  {
-                    foreach ($insights as $insight) {
+                foreach ($insights as $insight) {
+                    if ($insight->emphasis > Insight::EMPHASIS_LOW) {
                         $username_in_title = (($insight->instance->network == 'twitter')?'@':'') .
                         $insight->instance->network_username;
-                        $title = str_replace(':', '', $insight->prefix). " (".$username_in_title .")";
+                        $title = str_replace(':', '', $insight->headline). " (".$username_in_title .")";
                         $push->setTitle($title);
                         $push->setMessage(strip_tags(str_replace(':', '', $insight->text)));
                         $insight_date = urlencode(date('Y-m-d', strtotime($insight->date)));
                         $push->setUrl(Utils::getApplicationURL()."?u=".$insight->instance->network_username."&n=".
-                        $insight->instance->network."&d=".$insight_date."&s=".
-                        $insight->slug);
+                            $insight->instance->network."&d=".$insight_date."&s=".
+                            $insight->slug);
                         $push->setDebug(true);
                         $results = $push->send();
                         $logger->logInfo("Push results: ".Utils::varDumpToString($results), __METHOD__.','.__LINE__);
