@@ -441,9 +441,10 @@ class Pushover
             if($this->getDebug()) {
                 $post_fields_str = '';
                 foreach ($post_fields as $field=>$value) {
-                    $post_fields_str .= $field."=".$value."&";
+                    $post_fields_str .= $field."=".urlencode($value)."&";
                 }
-                return array('output' => $xml, 'input' => $this, 'post_fields' => $post_fields_str );
+                return array('response' => $response, 'output' => $xml, 'input' => $this,
+                    'post_fields' => $post_fields_str );
             }
             else {
                 return ($xml->status == 1) ? true : false;
