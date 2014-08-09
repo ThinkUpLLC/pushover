@@ -80,12 +80,22 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
             //Get insights since last pushed ID, or latest insight
             $insight_dao = DAOFactory::getDAO('InsightDAO');
             $insights = array();
-            if ($last_push_completion !== false ) {
-                //Get insights since last pushed insight creation date
-                $insights = $insight_dao->getAllOwnerInstanceInsightsSince($owner->id, $last_push_completion);
+            if ($owner->is_admin) {
+                if ($last_push_completion !== false ) {
+                    //Get all insights since last pushed insight creation date
+                    $insights = $insight_dao->getAllInstanceInsightsSince($last_push_completion);
+                } else {
+                    // get last insight generated
+                    $insights = $insight_dao->getAllInstanceInsights($page_count=1);
+                }
             } else {
-                // get last insight generated
-                $insights = $insight_dao->getAllOwnerInstanceInsights($owner->id, $page_count=1);
+                if ($last_push_completion !== false ) {
+                    //Get insights since last pushed insight creation date
+                    $insights = $insight_dao->getAllOwnerInstanceInsightsSince($owner->id, $last_push_completion);
+                } else {
+                    // get last insight generated
+                    $insights = $insight_dao->getAllOwnerInstanceInsights($owner->id, $page_count=1);
+                }
             }
             if (sizeof($insights) > 0) {
                 $push = new Pushover();
@@ -121,9 +131,10 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
                     $plugin_dao = DAOFactory::getDAO('PluginDAO');
                     $plugin_id = $plugin_dao->getPluginId('pushover');
                     $result = $plugin_option_dao->insertOption($plugin_id, 'last_push_completion', date('Y-m-d H:i:s'));
-                    $logger->logInfo("Inserted new option ID ".$result, __METHOD__.','.__LINE__);
+                    $logger->logInfo("Inserted/updated option ID ".$result, __METHOD__.','.__LINE__);
                 }
-                $logger->logUserSuccess("Pushed ".sizeof($insights)." insights.", __METHOD__.','.__LINE__);
+                $logger->logUserSuccess("Pushed ".sizeof($insights)." insight".((sizeof($insights) != 0)?'':'s'),
+                    __METHOD__.','.__LINE__);
             } else {
                 $logger->logInfo("No insights to push.", __METHOD__.','.__LINE__);
             }
