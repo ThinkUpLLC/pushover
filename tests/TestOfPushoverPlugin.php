@@ -122,7 +122,7 @@ class TestOfPushoverPlugin extends ThinkUpUnitTestCase {
         $builders[] = FixtureBuilder::build('instances', array('id'=>1));
         //insights
         $builders[] = FixtureBuilder::build('insights', array('id'=>1, 'instance_id'=>1, 'text'=>'hallo',
-            'related_data'=>null));
+            'related_data'=>null, 'emphasis'=>Insight::EMPHASIS_HIGH));
 
         $this->simulateLogin('me@example.com');
         $plugin = new PushoverPlugin();

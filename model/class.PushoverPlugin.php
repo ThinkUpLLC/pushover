@@ -71,6 +71,7 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
             $options = $plugin_option_dao->getOptionsHash('pushover');
             if (isset($options['last_push_completion']->option_value)) {
                 $last_push_completion = $options['last_push_completion']->option_value;
+                $logger->logUserInfo("Last push completion was ".$last_push_completion, __METHOD__.','.__LINE__);
             } else {
                 $last_push_completion = false;
             }
@@ -97,7 +98,10 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
                     $insights = $insight_dao->getAllOwnerInstanceInsights($owner->id, $page_count=1);
                 }
             }
+            $total_pushed = 0;
             if (sizeof($insights) > 0) {
+                $logger->logUserInfo("Insight candidates to push, only choosing MED or HIGH emphasis ",
+                    __METHOD__.','.__LINE__);
                 $push = new Pushover();
                 $push->setToken($pushover_app_token);
                 $push->setUser($pushover_user_key);
@@ -118,22 +122,25 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
                         $push->setDebug(true);
                         $results = $push->send();
                         $logger->logInfo("Push results: ".Utils::varDumpToString($results), __METHOD__.','.__LINE__);
+                        $total_pushed = $total_pushed + 1;
                     }
                 }
                 // Update $last_push_completion in plugin settings
                 if (isset($options['last_push_completion']->id)) {
                     //update option
                     $result = $plugin_option_dao->updateOption($options['last_push_completion']->id,
-                    'last_push_completion', date('Y-m-d H:i:s'));
+                        'last_push_completion', date('Y-m-d H:i:s'));
                     $logger->logInfo("Updated ".$result." option", __METHOD__.','.__LINE__);
                 } else {
                     //insert option
                     $plugin_dao = DAOFactory::getDAO('PluginDAO');
                     $plugin_id = $plugin_dao->getPluginId('pushover');
                     $result = $plugin_option_dao->insertOption($plugin_id, 'last_push_completion', date('Y-m-d H:i:s'));
-                    $logger->logInfo("Inserted/updated option ID ".$result, __METHOD__.','.__LINE__);
+                    $logger->logInfo("Inserted option ID ".$result, __METHOD__.','.__LINE__);
                 }
-                $logger->logUserSuccess("Pushed ".sizeof($insights)." insight".((sizeof($insights) != 0)?'':'s'),
+            }
+            if ($total_pushed > 0) {
+                $logger->logUserSuccess("Pushed ".$total_pushed." insight".(($total_pushed == 1)?'':'s'),
                     __METHOD__.','.__LINE__);
             } else {
                 $logger->logInfo("No insights to push.", __METHOD__.','.__LINE__);
