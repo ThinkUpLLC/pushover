@@ -5,12 +5,11 @@
  * PHP service wrapper for the pushover.net API: https://pushover.net/api
  *
  * @author Chris Schalenborgh <chris.s@kryap.com>
- * @version 0.1
+ * @version 0.2
  * @package php-pushover
  * @example test.php
  * @link https://pushover.net/api
  * @license BSD License
- * https://github.com/kryap/php-pushover
  */
 
 class Pushover
@@ -68,7 +67,7 @@ class Pushover
     private $_device;
 
     /**
-     * Priority of the message. Can be 0 or 1. High-priority messages override a user's "quiet hours" setting and will always be delivered any time they are received. High priority messages are highlighted in red in the Android and iOS clients.
+     * Priority of the message. Can be 0, 1 or 2. High-priority messages (1) override a user's "quiet hours" setting and will always be delivered any time they are received. High priority messages are highlighted in red in the Android and iOS clients. Emergency Priority (2) messages work similar to High-Priority messages, but they are repeated until the message is acknowledged by the user.
      *
      * @var string
      */
@@ -88,8 +87,33 @@ class Pushover
      */
     private $_url_title;
 
+    /**
+     * The Retry parameter is only used when the Priority is set to 2 (or emergency-priority), and specifies how often (in seconds) the Pushover servers will send the same notification to the user. In a situation where your user might be in a noisy environment or sleeping, retrying the notification (with sound and vibration) will help get his or her attention. This parameter must have a value of at least 30 seconds between retries.
+     *
+     * @var int
+     */
+    private $_retry;
 
+    /**
+    * The expire parameter is only used when the Priority is set to 2 (or emergency-priority), and specifies how many seconds your notification will continue to be retried for. If the notification has not been acknowledged in expire seconds, it will be marked as expired and will stop being sent to the user. This parameter must have a maximum value of at most 86400 seconds (24 hours).
+    *
+    * @var int
+    */
+    private $_expire;
 
+    /**
+     * The optional callback parameter may be supplied with a publicly-accessible URL that our servers will send a request to when the user has acknowledged your notification.
+     *
+     * @var string
+     */
+    private $_callback;
+
+    /**
+    * The sound parameter. Get an up-to-date sound list from https://api.pushover.net/1/sounds.json?token=
+    *
+    * @var int
+    */
+    private $_sound;
 
     /**
      * Default constructor
@@ -155,6 +179,60 @@ class Pushover
      */
     public function getTitle () {
         return $this->_title;
+    }
+
+    /**
+     * Set Retry Time
+     *
+     * @param int $retry The retry time (in seconds). Must have a value of at least 30 seconds.
+     */
+    public function setRetry ($retry) {
+        $this->_retry = (int)$retry;
+    }
+
+    /**
+     * Get Retry Time
+     *
+     * @return int
+     */
+    public function getRetry() {
+        return $this->_retry;
+    }
+
+    /**
+     * Set Expire Time
+     *
+     * @param int $expire The expiry time (in seconds). Must have a maximum value of at most, 86400 seconds.
+     */
+    public function setExpire ($expire) {
+        $this->_expire = (int)$expire;
+        }
+
+    /**
+     * Get Expire Time
+     *
+     * @return string
+     */
+    public function getExpire () {
+        return $this->_expire;
+    }
+
+    /**
+     * Set Callback URL
+     *
+     * @param string $callback a publically-accessible URL that Pushover sends a request to when the user has acknowledged your notification.
+     */
+    public function setCallback ($callback) {
+        $this->_callback = $callback;
+    }
+
+    /**
+     * Get Callback URL
+     *
+     * @return int
+     */
+    public function getCallback() {
+        return $this->_callback;
     }
 
     /**
@@ -225,6 +303,7 @@ class Pushover
      * -1 Low priority notifications.
      * 0  Default.
      * 1 triggers a high-priority alert that always generates sound and vibration.
+     * 2 triggers the same high-priority alert that #1 does; but is repeated until the notification is acknowledged by the user.
      *
      * @param int $priority priority level.
      *
@@ -304,6 +383,26 @@ class Pushover
     }
 
     /**
+     * Set sound
+     *
+     * @param string $sound If no sound parameter is specified, the user's default tone will play. If the user has not chosen a custom sound, the standard Pushover sound will play.
+     *
+     * @return void
+     */
+    public function setSound ($sound) {
+        $this->_sound = (string)$sound;
+    }
+
+    /**
+     * Get sound
+     *
+     * @return string
+     */
+    public function getSound () {
+        return $this->_sound;
+    }
+
+    /**
      * Send message to Pushover API
      *
      * @return bool
@@ -319,9 +418,9 @@ class Pushover
             if possible, set CURLOPT_SSL_VERIFYPEER to true..
             - http://www.tehuber.com/phps/cabundlegen.phps
             */
-            curl_setopt($c, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($c, CURLOPT_SSL_VERIFYPEER, true);
             curl_setopt($c, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($c, CURLOPT_POSTFIELDS, array(
+            $post_fields = array(
                 'token' => $this->getToken(),
                 'user' => $this->getUser(),
                 'title' => $this->getTitle(),
@@ -329,15 +428,22 @@ class Pushover
                 'device' => $this->getDevice(),
                 'priority' => $this->getPriority(),
                 'timestamp' => $this->getTimestamp(),
+                'expire' => $this->getExpire(),
+                'retry' => $this->getRetry(),
+                'callback' => $this->getCallback(),
                 'url' => $this->getUrl(),
-                'url_title' => $this->getUrlTitle()
-            ));
-
+                'sound' => $this->getSound(),
+                'url_title' => $this->getUrlTitle());
+            curl_setopt($c, CURLOPT_POSTFIELDS, $post_fields);
             $response = curl_exec($c);
             $xml = simplexml_load_string($response);
 
             if($this->getDebug()) {
-                return array('output' => $xml, 'input' => $this);
+                $post_fields_str = '';
+                foreach ($post_fields as $field=>$value) {
+                    $post_fields_str .= $field."=".$value."&";
+                }
+                return array('output' => $xml, 'input' => $this, 'post_fields' => $post_fields_str );
             }
             else {
                 return ($xml->status == 1) ? true : false;
@@ -345,4 +451,3 @@ class Pushover
         }
     }
 }
-
