@@ -2,7 +2,7 @@
 /*
  Plugin Name: Pushover
  Plugin URI: http://github.com/ginatrapani/thinkup/tree/master/webapp/plugins/pushover/
- Description: Push ThinkUp insight notifications to your smartphone.
+ Description: Get insight push notifications via Pushover.net (only non-low emphasis insights after 7am local time).
  Class: PushoverPlugin
  Icon: assets/img/plugin_icon.png
  Version: 0.01
