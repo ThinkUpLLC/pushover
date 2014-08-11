@@ -32,13 +32,17 @@
 require_once THINKUP_WEBAPP_PATH.'plugins/pushover/extlib/Pushover.php';
 
 class PushoverPlugin extends Plugin implements CrawlerPlugin {
+    /**
+     * @var Current Unix timestamp, here for testing.
+     */
+    var $current_timestamp;
 
     public function __construct($vals=null) {
         parent::__construct($vals);
         $this->folder_name = 'pushover';
         $this->addRequiredSetting('pushover_user_key');
         $this->addRequiredSetting('pushover_app_token');
-
+        $this->current_timestamp = time();
     }
 
     public function activate() {
@@ -67,85 +71,107 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
         isset($options['pushover_app_token']) ? $options['pushover_app_token']->option_value : null;
 
         if (isset($pushover_user_key) && isset($pushover_app_token)) {
-            //Get the last time Pushover notifications were sent
-            $options = $plugin_option_dao->getOptionsHash('pushover');
-            if (isset($options['last_push_completion']->option_value)) {
-                $last_push_completion = $options['last_push_completion']->option_value;
-                $logger->logUserInfo("Last push completion was ".$last_push_completion, __METHOD__.','.__LINE__);
-            } else {
-                $last_push_completion = false;
-            }
+            // Only send pushes after 7am local time
             $owner_dao = DAOFactory::getDAO('OwnerDAO');
             $owner = $owner_dao->getByEmail(Session::getLoggedInUser());
-
-            //Get insights since last pushed ID, or latest insight
-            $insight_dao = DAOFactory::getDAO('InsightDAO');
-            $insights = array();
-            if ($owner->is_admin) {
-                if ($last_push_completion !== false ) {
-                    //Get all insights since last pushed insight creation date
-                    $insights = $insight_dao->getAllInstanceInsightsSince($last_push_completion);
-                } else {
-                    // get last insight generated
-                    $insights = $insight_dao->getAllInstanceInsights($page_count=1);
-                }
-            } else {
-                if ($last_push_completion !== false ) {
-                    //Get insights since last pushed insight creation date
-                    $insights = $insight_dao->getAllOwnerInstanceInsightsSince($owner->id, $last_push_completion);
-                } else {
-                    // get last insight generated
-                    $insights = $insight_dao->getAllOwnerInstanceInsights($owner->id, $page_count=1);
-                }
+            $tz = $owner->timezone;
+            if (empty($tz)) {
+                $config = Config::getInstance();
+                $tz = $config->getValue('timezone');
             }
-            $total_pushed = 0;
-            if (sizeof($insights) > 0) {
-                $logger->logUserInfo("Insight candidates to push, only choosing MED or HIGH emphasis ",
-                    __METHOD__.','.__LINE__);
-                $push = new Pushover();
-                $push->setToken($pushover_app_token);
-                $push->setUser($pushover_user_key);
-                $cfg = Config::getInstance();
-                $app_title = $cfg->getValue('app_title_prefix').'ThinkUp';
-                $push->setUrlTitle($app_title);
-                foreach ($insights as $insight) {
-                    if ($insight->emphasis > Insight::EMPHASIS_LOW) {
-                        $username_in_title = (($insight->instance->network == 'twitter')?'@':'') .
-                            $insight->instance->network_username;
-                        $title = strip_tags($insight->headline);
-                        $push->setTitle($title);
-                        $message = strip_tags(str_replace(':', '', $insight->text));
-                        $message = ($message == '')? "See the insight":$message;
-                        $push->setMessage($message);
-                        $insight_date = urlencode(date('Y-m-d', strtotime($insight->date)));
-                        $push->setUrl(Utils::getApplicationURL()."?u=".$insight->instance->network_username."&n=".
-                            $insight->instance->network."&d=".$insight_date."&s=". $insight->slug);
-                        $push->setDebug(false);
-                        $results = $push->send();
-                        $logger->logInfo("Push details: ".Utils::varDumpToString($push), __METHOD__.','.__LINE__);
-                        $logger->logInfo("Push results: ".Utils::varDumpToString($results), __METHOD__.','.__LINE__);
-                        $total_pushed = $total_pushed + 1;
+
+            // Is it after 7am local time?
+            if (!empty($tz)) {
+                $original_tz = date_default_timezone_get();
+                date_default_timezone_set($tz);
+                $localized_hour = (int)date('G', $this->current_timestamp);
+                date_default_timezone_set($original_tz);
+            } else {
+                $localize_hour = (int)date('G', $this->current_timestamp);
+            }
+            if ($localized_hour >= 7) {
+                //Get the last time Pushover notifications were sent
+                $options = $plugin_option_dao->getOptionsHash('pushover');
+                if (isset($options['last_push_completion']->option_value)) {
+                    $last_push_completion = $options['last_push_completion']->option_value;
+                    $logger->logUserInfo("Last push completion was ".$last_push_completion, __METHOD__.','.__LINE__);
+                } else {
+                    $last_push_completion = false;
+                }
+
+                //Get insights since last pushed ID, or latest insight
+                $insight_dao = DAOFactory::getDAO('InsightDAO');
+                $insights = array();
+                if ($owner->is_admin) {
+                    if ($last_push_completion !== false ) {
+                        //Get all insights since last pushed insight creation date
+                        $insights = $insight_dao->getAllInstanceInsightsSince($last_push_completion);
+                    } else {
+                        // get last insight generated
+                        $insights = $insight_dao->getAllInstanceInsights($page_count=1);
+                    }
+                } else {
+                    if ($last_push_completion !== false ) {
+                        //Get insights since last pushed insight creation date
+                        $insights = $insight_dao->getAllOwnerInstanceInsightsSince($owner->id, $last_push_completion);
+                    } else {
+                        // get last insight generated
+                        $insights = $insight_dao->getAllOwnerInstanceInsights($owner->id, $page_count=1);
                     }
                 }
-                // Update $last_push_completion in plugin settings
-                if (isset($options['last_push_completion']->id)) {
-                    //update option
-                    $result = $plugin_option_dao->updateOption($options['last_push_completion']->id,
-                        'last_push_completion', date('Y-m-d H:i:s'));
-                    $logger->logInfo("Updated ".$result." option", __METHOD__.','.__LINE__);
-                } else {
-                    //insert option
-                    $plugin_dao = DAOFactory::getDAO('PluginDAO');
-                    $plugin_id = $plugin_dao->getPluginId('pushover');
-                    $result = $plugin_option_dao->insertOption($plugin_id, 'last_push_completion', date('Y-m-d H:i:s'));
-                    $logger->logInfo("Inserted option ID ".$result, __METHOD__.','.__LINE__);
+                $total_pushed = 0;
+                if (sizeof($insights) > 0) {
+                    $logger->logUserInfo("Insight candidates to push, only choosing MED or HIGH emphasis ",
+                        __METHOD__.','.__LINE__);
+                    $push = new Pushover();
+                    $push->setToken($pushover_app_token);
+                    $push->setUser($pushover_user_key);
+                    $cfg = Config::getInstance();
+                    $app_title = $cfg->getValue('app_title_prefix').'ThinkUp';
+                    $push->setUrlTitle($app_title);
+                    foreach ($insights as $insight) {
+                        if ($insight->emphasis > Insight::EMPHASIS_LOW) {
+                            $username_in_title = (($insight->instance->network == 'twitter')?'@':'') .
+                                $insight->instance->network_username;
+                            $title = strip_tags($insight->headline);
+                            $push->setTitle($title);
+                            $message = strip_tags(str_replace(':', '', $insight->text));
+                            $message = ($message == '')? "See the insight":$message;
+                            $push->setMessage($message);
+                            $insight_date = urlencode(date('Y-m-d', strtotime($insight->date)));
+                            $push->setUrl(Utils::getApplicationURL()."?u=".$insight->instance->network_username."&n=".
+                                $insight->instance->network."&d=".$insight_date."&s=". $insight->slug);
+                            $push->setDebug(false);
+                            $results = $push->send();
+                            $logger->logInfo("Push details: ".Utils::varDumpToString($push), __METHOD__.','.__LINE__);
+                            $logger->logInfo("Push results: ".Utils::varDumpToString($results),
+                                __METHOD__.','.__LINE__);
+                            $total_pushed = $total_pushed + 1;
+                        }
+                    }
+                    // Update $last_push_completion in plugin settings
+                    if (isset($options['last_push_completion']->id)) {
+                        //update option
+                        $result = $plugin_option_dao->updateOption($options['last_push_completion']->id,
+                            'last_push_completion', date('Y-m-d H:i:s'));
+                        $logger->logInfo("Updated ".$result." option", __METHOD__.','.__LINE__);
+                    } else {
+                        //insert option
+                        $plugin_dao = DAOFactory::getDAO('PluginDAO');
+                        $plugin_id = $plugin_dao->getPluginId('pushover');
+                        $result = $plugin_option_dao->insertOption($plugin_id, 'last_push_completion',
+                            date('Y-m-d H:i:s'));
+                        $logger->logInfo("Inserted option ID ".$result, __METHOD__.','.__LINE__);
+                    }
                 }
-            }
-            if ($total_pushed > 0) {
-                $logger->logUserSuccess("Pushed ".$total_pushed." insight".(($total_pushed == 1)?'':'s'),
-                    __METHOD__.','.__LINE__);
+                if ($total_pushed > 0) {
+                    $logger->logUserSuccess("Pushed ".$total_pushed." insight".(($total_pushed == 1)?'':'s'),
+                        __METHOD__.','.__LINE__);
+                } else {
+                    $logger->logInfo("No insights to push.", __METHOD__.','.__LINE__);
+                }
             } else {
-                $logger->logInfo("No insights to push.", __METHOD__.','.__LINE__);
+                $logger->logInfo("It's too early in the am for push notifications.", __METHOD__.','.__LINE__);
             }
         } else {
             $logger->logInfo("Pushover plugin isn't configured for use.", __METHOD__.','.__LINE__);

@@ -75,11 +75,12 @@ class TestOfPushoverPlugin extends ThinkUpUnitTestCase {
         'option_name'=>'pushover_user_key', 'option_value'=>'qwerty'));
 
         $plugin = new PushoverPlugin();
+        $plugin->current_timestamp = strtotime('10am');
         $plugin->crawl();
         //@TODO check log for 'no insights to push'
     }
 
-    public function testCrawlerConfiguredInsightsToPushNonAdmin() {
+    public function testCrawlerConfiguredInsightsToPushNonAdminAfter7() {
         $builders = array();
         $builders[] = FixtureBuilder::build('plugins', array('name'=>'Pushover', 'folder_name'=>'pushover'));
         $plugin_dao = new PluginMySQLDAO();
@@ -102,10 +103,11 @@ class TestOfPushoverPlugin extends ThinkUpUnitTestCase {
 
         $this->simulateLogin('me@example.com');
         $plugin = new PushoverPlugin();
+        $plugin->current_timestamp = strtotime('10am');
         $plugin->crawl();
     }
 
-    public function testCrawlerConfiguredInsightsToPushAdmin() {
+    public function testCrawlerConfiguredInsightsToPushAdminAfter7() {
         $builders = array();
         $builders[] = FixtureBuilder::build('plugins', array('name'=>'Pushover', 'folder_name'=>'pushover'));
         $plugin_dao = new PluginMySQLDAO();
@@ -126,6 +128,59 @@ class TestOfPushoverPlugin extends ThinkUpUnitTestCase {
 
         $this->simulateLogin('me@example.com');
         $plugin = new PushoverPlugin();
+        $plugin->current_timestamp = strtotime('10am');
+        $plugin->crawl();
+    }
+
+    public function testCrawlerConfiguredInsightsToPushNonAdminBefore7() {
+        $builders = array();
+        $builders[] = FixtureBuilder::build('plugins', array('name'=>'Pushover', 'folder_name'=>'pushover'));
+        $plugin_dao = new PluginMySQLDAO();
+        $plugin_id = $plugin_dao->getPluginId('pushover');
+
+        $builders[] = FixtureBuilder::build('options', array('namespace'=>'plugin_options-'.$plugin_id,
+        'option_name'=>'pushover_app_token', 'option_value'=>'asdf'));
+        $builders[] = FixtureBuilder::build('options', array('namespace'=>'plugin_options-'.$plugin_id,
+        'option_name'=>'pushover_user_key', 'option_value'=>'qwerty'));
+
+        //owner
+        $builders[] = FixtureBuilder::build('owners', array('id'=>1, 'email'=>'me@example.com', 'is_admin'=>0));
+        //instance
+        $builders[] = FixtureBuilder::build('instances', array('id'=>1));
+        //owner_instance
+        $builders[] = FixtureBuilder::build('owner_instances', array('owner_id'=>1, 'instance_id'=>1));
+        //insights
+        $builders[] = FixtureBuilder::build('insights', array('id'=>1, 'instance_id'=>1, 'text'=>'hallo',
+            'related_data'=>null));
+
+        $this->simulateLogin('me@example.com');
+        $plugin = new PushoverPlugin();
+        $plugin->current_timestamp = strtotime('6am');
+        $plugin->crawl();
+    }
+
+    public function testCrawlerConfiguredInsightsToPushAdminBefore7() {
+        $builders = array();
+        $builders[] = FixtureBuilder::build('plugins', array('name'=>'Pushover', 'folder_name'=>'pushover'));
+        $plugin_dao = new PluginMySQLDAO();
+        $plugin_id = $plugin_dao->getPluginId('pushover');
+
+        $builders[] = FixtureBuilder::build('options', array('namespace'=>'plugin_options-'.$plugin_id,
+        'option_name'=>'pushover_app_token', 'option_value'=>'asdf'));
+        $builders[] = FixtureBuilder::build('options', array('namespace'=>'plugin_options-'.$plugin_id,
+        'option_name'=>'pushover_user_key', 'option_value'=>'qwerty'));
+
+        //owner
+        $builders[] = FixtureBuilder::build('owners', array('id'=>1, 'email'=>'me@example.com', 'is_admin'=>1));
+        //instance
+        $builders[] = FixtureBuilder::build('instances', array('id'=>1));
+        //insights
+        $builders[] = FixtureBuilder::build('insights', array('id'=>1, 'instance_id'=>1, 'text'=>'hallo',
+            'related_data'=>null, 'emphasis'=>Insight::EMPHASIS_HIGH));
+
+        $this->simulateLogin('me@example.com');
+        $plugin = new PushoverPlugin();
+        $plugin->current_timestamp = strtotime('6am');
         $plugin->crawl();
     }
 }
