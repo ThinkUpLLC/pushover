@@ -453,7 +453,17 @@ class Pushover
                 return ($xml->status == 1) ? true : false;
             }
         } else {
-            throw new Exception('Pushover: Required fields are missing.');
+            if (empty($this->_token)) {
+                throw new PushoverRequiredFieldNotSetException('Application token is not set.');
+            }
+            if (empty($this->_user)) {
+                throw new PushoverRequiredFieldNotSetException('User API token is not set.');
+            }
+            if (empty($this->_message)) {
+                throw new PushoverRequiredFieldNotSetException('Message is not set.');
+            }
         }
     }
 }
+
+class PushoverRequiredFieldNotSetException extends Exception { }
