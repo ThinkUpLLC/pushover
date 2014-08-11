@@ -111,16 +111,18 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
                 foreach ($insights as $insight) {
                     if ($insight->emphasis > Insight::EMPHASIS_LOW) {
                         $username_in_title = (($insight->instance->network == 'twitter')?'@':'') .
-                        $insight->instance->network_username;
+                            $insight->instance->network_username;
                         $title = strip_tags($insight->headline);
                         $push->setTitle($title);
-                        $push->setMessage(strip_tags(str_replace(':', '', $insight->text)));
+                        $message = strip_tags(str_replace(':', '', $insight->text));
+                        $message = ($message == '')? "See the insight":$message;
+                        $push->setMessage($message);
                         $insight_date = urlencode(date('Y-m-d', strtotime($insight->date)));
                         $push->setUrl(Utils::getApplicationURL()."?u=".$insight->instance->network_username."&n=".
-                            $insight->instance->network."&d=".$insight_date."&s=".
-                            $insight->slug);
-                        $push->setDebug(true);
+                            $insight->instance->network."&d=".$insight_date."&s=". $insight->slug);
+                        $push->setDebug(false);
                         $results = $push->send();
+                        $logger->logInfo("Push details: ".Utils::varDumpToString($push), __METHOD__.','.__LINE__);
                         $logger->logInfo("Push results: ".Utils::varDumpToString($results), __METHOD__.','.__LINE__);
                         $total_pushed = $total_pushed + 1;
                     }

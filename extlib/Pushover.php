@@ -406,6 +406,7 @@ class Pushover
      * Send message to Pushover API
      *
      * @return bool
+     * @throws Exception
      */
     public function send() {
         if(!Empty($this->_token) && !Empty($this->_user) && !Empty($this->_message)) {
@@ -436,6 +437,9 @@ class Pushover
                 'url_title' => $this->getUrlTitle());
             curl_setopt($c, CURLOPT_POSTFIELDS, $post_fields);
             $response = curl_exec($c);
+            $status = curl_getinfo($c, CURLINFO_HTTP_CODE);
+            curl_close($c);
+
             $xml = simplexml_load_string($response);
 
             if($this->getDebug()) {
@@ -443,12 +447,13 @@ class Pushover
                 foreach ($post_fields as $field=>$value) {
                     $post_fields_str .= $field."=".urlencode($value)."&";
                 }
-                return array('response' => $response, 'output' => $xml, 'input' => $this,
+                return array('status'=>$status, 'response' => $response, 'output' => $xml, 'input' => $this,
                     'post_fields' => $post_fields_str );
-            }
-            else {
+            } else {
                 return ($xml->status == 1) ? true : false;
             }
+        } else {
+            throw new Exception('Pushover: Required fields are missing.');
         }
     }
 }
