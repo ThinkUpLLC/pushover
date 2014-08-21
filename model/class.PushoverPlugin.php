@@ -121,7 +121,7 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
                 }
                 $total_pushed = 0;
                 if (sizeof($insights) > 0) {
-                    $logger->logUserInfo("Insight candidates to push, only choosing MED or HIGH emphasis ",
+                    $logger->logUserInfo("Insight candidates to push, only choosing HIGH emphasis ",
                         __METHOD__.','.__LINE__);
                     $push = new Pushover();
                     $push->setToken($pushover_app_token);
@@ -130,7 +130,7 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
                     $app_title = $cfg->getValue('app_title_prefix').'ThinkUp';
                     $push->setUrlTitle($app_title);
                     foreach ($insights as $insight) {
-                        if ($insight->emphasis > Insight::EMPHASIS_LOW) {
+                        if ($insight->emphasis == Insight::EMPHASIS_HIGH) {
                             $username_in_title = (($insight->instance->network == 'twitter')?'@':'') .
                                 $insight->instance->network_username;
                             $title = strip_tags($insight->headline);
@@ -149,6 +149,33 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
                             $total_pushed = $total_pushed + 1;
                         }
                     }
+                    // If no HIGH insights were pushed (b/c they don't exist) push medium insights
+                    if ($total_pushed == 0 ) {
+                        $logger->logUserInfo("No high emphasis insights exist, so pushing medium now",
+                            __METHOD__.','.__LINE__);
+                        foreach ($insights as $insight) {
+                            if ($insight->emphasis == Insight::EMPHASIS_MED) {
+                                $username_in_title = (($insight->instance->network == 'twitter')?'@':'') .
+                                    $insight->instance->network_username;
+                                $title = strip_tags($insight->headline);
+                                $push->setTitle($title);
+                                $message = strip_tags(str_replace(':', '', $insight->text));
+                                $message = ($message == '')? "See the insight":$message;
+                                $push->setMessage($message);
+                                $insight_date = urlencode(date('Y-m-d', strtotime($insight->date)));
+                                $push->setUrl(Utils::getApplicationURL()."?u=".$insight->instance->network_username.
+                                    "&n=". $insight->instance->network."&d=".$insight_date."&s=". $insight->slug);
+                                $push->setDebug(false);
+                                $results = $push->send();
+                                $logger->logInfo("Push details: ".Utils::varDumpToString($push), __METHOD__.','.
+                                    __LINE__);
+                                $logger->logInfo("Push results: ".Utils::varDumpToString($results),
+                                    __METHOD__.','.__LINE__);
+                                $total_pushed = $total_pushed + 1;
+                            }
+                        }
+                    }
+
                     // Update $last_push_completion in plugin settings
                     if (isset($options['last_push_completion']->id)) {
                         //update option
