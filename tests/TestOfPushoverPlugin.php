@@ -94,12 +94,13 @@ class TestOfPushoverPlugin extends ThinkUpUnitTestCase {
         //owner
         $builders[] = FixtureBuilder::build('owners', array('id'=>1, 'email'=>'me@example.com', 'is_admin'=>0));
         //instance
-        $builders[] = FixtureBuilder::build('instances', array('id'=>1));
+        $builders[] = FixtureBuilder::build('instances', array('id'=>1, 'network_username'=>'twitter_user',
+            'network'=>'twitter'));
         //owner_instance
         $builders[] = FixtureBuilder::build('owner_instances', array('owner_id'=>1, 'instance_id'=>1));
         //insights
         $builders[] = FixtureBuilder::build('insights', array('id'=>1, 'instance_id'=>1, 'text'=>'hallo',
-            'related_data'=>null));
+            'related_data'=>null, 'headline'=>'@twitter_user is the best', 'text'=>'are you @twitter_user\'s friend?'));
 
         $this->simulateLogin('me@example.com');
         $plugin = new PushoverPlugin();
@@ -121,10 +122,12 @@ class TestOfPushoverPlugin extends ThinkUpUnitTestCase {
         //owner
         $builders[] = FixtureBuilder::build('owners', array('id'=>1, 'email'=>'me@example.com', 'is_admin'=>1));
         //instance
-        $builders[] = FixtureBuilder::build('instances', array('id'=>1));
+        $builders[] = FixtureBuilder::build('instances', array('id'=>1, 'network_username'=>'twitter_user',
+            'network'=>'twitter'));
         //insights
         $builders[] = FixtureBuilder::build('insights', array('id'=>1, 'instance_id'=>1, 'text'=>'hallo',
-            'related_data'=>null, 'emphasis'=>Insight::EMPHASIS_HIGH));
+            'related_data'=>null, 'headline'=>'@twitter_user is the best', 'text'=>'are you @twitter_user\'s friend?',
+            'emphasis'=>Insight::EMPHASIS_HIGH, 'network'=>'twitter'));
 
         $this->simulateLogin('me@example.com');
         $plugin = new PushoverPlugin();

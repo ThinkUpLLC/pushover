@@ -131,21 +131,7 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
                     $push->setUrlTitle($app_title);
                     foreach ($insights as $insight) {
                         if ($insight->emphasis == Insight::EMPHASIS_HIGH) {
-                            $username_in_title = (($insight->instance->network == 'twitter')?'@':'') .
-                                $insight->instance->network_username;
-                            $title = strip_tags($insight->headline);
-                            $push->setTitle($title);
-                            $message = strip_tags(str_replace(':', '', $insight->text));
-                            $message = ($message == '')? "See the insight":$message;
-                            $push->setMessage($message);
-                            $insight_date = urlencode(date('Y-m-d', strtotime($insight->date)));
-                            $push->setUrl(Utils::getApplicationURL()."?u=".$insight->instance->network_username."&n=".
-                                $insight->instance->network."&d=".$insight_date."&s=". $insight->slug);
-                            $push->setDebug(false);
-                            $results = $push->send();
-                            $logger->logInfo("Push details: ".Utils::varDumpToString($push), __METHOD__.','.__LINE__);
-                            $logger->logInfo("Push results: ".Utils::varDumpToString($results),
-                                __METHOD__.','.__LINE__);
+                            self::pushInsight($insight, $push, $logger);
                             $total_pushed = $total_pushed + 1;
                         }
                     }
@@ -155,22 +141,7 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
                             __METHOD__.','.__LINE__);
                         foreach ($insights as $insight) {
                             if ($insight->emphasis == Insight::EMPHASIS_MED) {
-                                $username_in_title = (($insight->instance->network == 'twitter')?'@':'') .
-                                    $insight->instance->network_username;
-                                $title = strip_tags($insight->headline);
-                                $push->setTitle($title);
-                                $message = strip_tags(str_replace(':', '', $insight->text));
-                                $message = ($message == '')? "See the insight":$message;
-                                $push->setMessage($message);
-                                $insight_date = urlencode(date('Y-m-d', strtotime($insight->date)));
-                                $push->setUrl(Utils::getApplicationURL()."?u=".$insight->instance->network_username.
-                                    "&n=". $insight->instance->network."&d=".$insight_date."&s=". $insight->slug);
-                                $push->setDebug(false);
-                                $results = $push->send();
-                                $logger->logInfo("Push details: ".Utils::varDumpToString($push), __METHOD__.','.
-                                    __LINE__);
-                                $logger->logInfo("Push results: ".Utils::varDumpToString($results),
-                                    __METHOD__.','.__LINE__);
+                                self::pushInsight($insight, $push, $logger);
                                 $total_pushed = $total_pushed + 1;
                             }
                         }
@@ -215,5 +186,24 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
     }
     public function renderInstanceConfiguration($owner, $instance_username, $instance_network) {
         return "";
+    }
+
+    private function pushInsight($insight, $push, $logger) {
+        $terms = new InsightTerms($insight->instance->network);
+        $title = strip_tags($insight->headline);
+        $title = $terms->swapInSecondPerson($insight->instance->network_username, $title);
+        $push->setTitle($title);
+        $message = strip_tags(str_replace(':', '', $insight->text));
+        $message = $terms->swapInSecondPerson($insight->instance->network_username, $message);
+        $message = ($message == '')? "See the insight":$message;
+        $push->setMessage($message);
+        $insight_date = urlencode(date('Y-m-d', strtotime($insight->date)));
+        $push->setUrl(Utils::getApplicationURL()."?u=".$insight->instance->network_username."&n=".
+            $insight->instance->network."&d=".$insight_date."&s=". $insight->slug);
+        $push->setDebug(true);
+        $results = $push->send();
+        $logger->logInfo("Push details: ".Utils::varDumpToString($push), __METHOD__.','.__LINE__);
+        $logger->logInfo("Push results: ".Utils::varDumpToString($results),
+            __METHOD__.','.__LINE__);
     }
 }
