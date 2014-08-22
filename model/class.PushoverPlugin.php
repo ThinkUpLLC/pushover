@@ -195,12 +195,12 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
         $push->setTitle($title);
         $message = strip_tags(str_replace(':', '', $insight->text));
         $message = $terms->swapInSecondPerson($insight->instance->network_username, $message);
-        $message = ($message == '')? "See the insight":$message;
+        $message = ($message == '')? "See the insight.":$message;
         $push->setMessage($message);
         $insight_date = urlencode(date('Y-m-d', strtotime($insight->date)));
         $push->setUrl(Utils::getApplicationURL()."?u=".$insight->instance->network_username."&n=".
             $insight->instance->network."&d=".$insight_date."&s=". $insight->slug);
-        $push->setDebug(true);
+        $push->setDebug(false);
         $results = $push->send();
         $logger->logInfo("Push details: ".Utils::varDumpToString($push), __METHOD__.','.__LINE__);
         $logger->logInfo("Push results: ".Utils::varDumpToString($results),
