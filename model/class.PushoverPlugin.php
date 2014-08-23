@@ -190,10 +190,10 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
 
     private function pushInsight($insight, $push, $logger) {
         $terms = new InsightTerms($insight->instance->network);
-        $title = strip_tags($insight->headline);
+        $title = strip_tags(html_entity_decode($insight->headline));
         $title = $terms->swapInSecondPerson($insight->instance->network_username, $title);
         $push->setTitle($title);
-        $message = strip_tags(str_replace(':', '', $insight->text));
+        $message = strip_tags(html_entity_decode($insight->text));
         $message = $terms->swapInSecondPerson($insight->instance->network_username, $message);
         $message = ($message == '')? "See the insight.":$message;
         $push->setMessage($message);
