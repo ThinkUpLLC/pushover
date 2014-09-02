@@ -89,7 +89,7 @@ class PushoverPlugin extends Plugin implements CrawlerPlugin {
             } else {
                 $localize_hour = (int)date('G', $this->current_timestamp);
             }
-            if ($localized_hour >= 7) {
+            if ($localized_hour >= 9) {
                 //Get the last time Pushover notifications were sent
                 $options = $plugin_option_dao->getOptionsHash('pushover');
                 if (isset($options['last_push_completion']->option_value)) {

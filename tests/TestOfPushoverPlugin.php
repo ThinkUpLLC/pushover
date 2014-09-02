@@ -80,7 +80,7 @@ class TestOfPushoverPlugin extends ThinkUpUnitTestCase {
         //@TODO check log for 'no insights to push'
     }
 
-    public function testCrawlerConfiguredInsightsToPushNonAdminAfter7() {
+    public function testCrawlerConfiguredInsightsToPushNonAdminAfter9() {
         $builders = array();
         $builders[] = FixtureBuilder::build('plugins', array('name'=>'Pushover', 'folder_name'=>'pushover'));
         $plugin_dao = new PluginMySQLDAO();
@@ -109,7 +109,7 @@ class TestOfPushoverPlugin extends ThinkUpUnitTestCase {
         $plugin->crawl();
     }
 
-    public function testCrawlerConfiguredInsightsToPushAdminAfter7() {
+    public function testCrawlerConfiguredInsightsToPushAdminAfter9() {
         $builders = array();
         $builders[] = FixtureBuilder::build('plugins', array('name'=>'Pushover', 'folder_name'=>'pushover'));
         $plugin_dao = new PluginMySQLDAO();
@@ -137,7 +137,7 @@ class TestOfPushoverPlugin extends ThinkUpUnitTestCase {
         $plugin->crawl();
     }
 
-    public function testCrawlerConfiguredInsightsToPushNonAdminBefore7() {
+    public function testCrawlerConfiguredInsightsToPushNonAdminBefore9() {
         $builders = array();
         $builders[] = FixtureBuilder::build('plugins', array('name'=>'Pushover', 'folder_name'=>'pushover'));
         $plugin_dao = new PluginMySQLDAO();
@@ -164,7 +164,7 @@ class TestOfPushoverPlugin extends ThinkUpUnitTestCase {
         $plugin->crawl();
     }
 
-    public function testCrawlerConfiguredInsightsToPushAdminBefore7() {
+    public function testCrawlerConfiguredInsightsToPushAdminBefore9() {
         $builders = array();
         $builders[] = FixtureBuilder::build('plugins', array('name'=>'Pushover', 'folder_name'=>'pushover'));
         $plugin_dao = new PluginMySQLDAO();
